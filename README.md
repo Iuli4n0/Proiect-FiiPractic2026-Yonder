@@ -1,12 +1,31 @@
 # Proiect-FiiPractic2026-Yonder
 
+- Folosesc Vagrant impreuna cu providerul ‘ansible’ pentru a ridica cele 2 vm-uri. Am folosit hostnames app.proiect.fiipractic.lan si gitlab.fiipractic.lan cu ip-urile 192.168.200.10 respectiv 192.168.200.20. Playbookul `common.yml` contine cerintele din proiect + configurare repos, instalare docker,gitlab si ce am mai avut nevoie. Playbookul `netdata.yml` contine insalarea si configurarea nginx + netdata. Gitlab-runner porneste pipeline-ul ci/cd. Runnerul face build si push la imaginea docker in registry. Dupa runnerul in etapa de deploy ruleaza playbookul ansible. Ansible intra cu ssh pe app.proiect.fiipractic.lan, descarca imaginea din registry si porneste docker. Docker face expose la aplicatie.
+
+
 Structura:
-- EXTRA - cerinte extra pentru proiectul final
-- EXTRA-EXTRA - alte exercitii facute pt restul sesiunilor
+- ./ - fisierele cerute la proiectul final
+- ./EXTRA - cerintele extra pentru proiectul final
+- ./EXTRA-EXTRA - alte exercitii facute pt restul sesiunilor
 
 
 Dificultati - la proiectul propriuzis nu au existat prea multe din moment ce mai facusem odata 90% acelasi lucru in timpul sesiunilor, am trecut ce probleme/dificultati am mai avut pe parcurs, ce mi-am mai amintit sau ce aveam notat 
 
+## Dificultati
+
+## Ansible
+- Primeam “skipping: no hosts matched” cand voiam sa rulez taskuri in ansible separat doar pe un host. Problema era ca dadeam tot hostname in loc de cel definit la “config.vm.define :gitlab”.
+
+- Am incercat sa instalez epel-releas si easy-rsa in acelasi task ansible. Nu gasea pachetul easy-rsa chiar daca acesta exista. Problema era ca repo de la epel nu se configure inainte sa caute easy-rsa. Dupa ce am separat instalarea in doua taskuri separate a mers.
+
+
+## Netdata
+- Nu am gasit netdata cu yum. L-am instalat cu scriptul de pe https://my-netdata.io/kickstart.sh
+- Cand am dat curl la site-ul cu scriptul in loc de script am primit un mesaj cu redirect. Trebuia sa folosesc flagul -L sa urmeze redirectul
+- Pentru netdata.proiect.fiipractic.lan Am folosit certificatul si cheia generate pt app.proiect.fiipractic.lan pt ca defapt au fost generate pt *.proiect.fiipractic.lan
+
+
+## Probleme intampinate pana sa ma apuc de proiectul final
 ## VAGRANT
 
 Am incercat providerul `ansible_local` in `Vagrantfile` pana in saptamana 3-4, dupa care mi-a aparut:

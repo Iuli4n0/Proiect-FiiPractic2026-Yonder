@@ -1,0 +1,147 @@
+---
+- name: FII Practic playbook
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Set timezone to Bucharest
+      community.general.timezone:
+        name: Europe/Bucharest
+      
+    - name: Install packages
+      ansible.builtin.yum:
+        name:
+          - git
+          - vim
+          - wget
+        state: present
+
+    - name: Update packages
+      ansible.builtin.yum:
+        name: '*'
+        state: latest
+    
+    - name: Install epel
+      ansible.builtin.yum:
+        name:
+          - epel-release
+        state: present
+    
+    - name: Install epel packages
+      ansible.builtin.yum:
+        name:
+         - easy-rsa
+        state: present
+
+    - name: Set password for root user
+      ansible.builtin.user:
+        name: root
+        password: "{{ 'fiipractic' | password_hash('sha512') }}"
+
+    - name: Allow ssh login
+      ansible.builtin.copy:
+        dest: /etc/ssh/sshd_config.d/99-vagrant.conf
+        content: |
+          PasswordAuthentication yes
+          PermitRootLogin yes
+      notify: Restart SSH
+
+    - name: Copy public key to server
+      ansible.posix.authorized_key:
+        user: root
+        state: present
+        key: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"
+
+    - name: Add Docker repository
+      yum_repository:
+        name: docker-ce-stable
+        description: Docker CE Stable
+        baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
+        gpgcheck: yes
+        gpgkey: https://download.docker.com/linux/centos/gpg
+        enabled: yes
+
+    - name: Install Docker
+      package:
+        name: "{{ item }}"
+        state: present
+      with_items:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+      - docker-compose-plugin
+
+    - name: Start and enable Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+    
+    - name: Deactivate firewalld
+      ansible.builtin.systemd:
+        name: firewalld
+        state: stopped
+        enabled: no
+    
+    - name: Disable SELinux
+      ansible.posix.selinux:
+        state: disabled
+    
+    - name: Copy certificate
+      ansible.builtin.copy:
+        src: ./ca.crt
+        dest: /etc/pki/ca-trust/source/anchors/ca.crt
+
+    - name: Update CA trust
+      ansible.builtin.command: update-ca-trust
+    
+    - name: Create ssh banner
+      ansible.builtin.copy:
+        dest: /etc/ssh/sshd_banner
+        content: "This server is restricted to authorized users only. All activities on this system are logged.Unauthorized access will be fully investigated and reported to the appropriate law enforcement agencies."
+      notify: Restart SSH
+    
+    - name: Set ssh banner
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        line: "Banner /etc/ssh/sshd_banner"
+        state: present
+      notify: Restart SSH
+  
+  handlers:
+    - name: Restart SSH
+      ansible.builtin.systemd:
+        name: sshd
+        state: restarted
+    
+- name: Setup Gitlab vm
+  hosts: gitlab
+  become: true
+  tasks:
+    - name: Set app hostname
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "192.168.200.10 app.proiect.fiipractic.lan"
+    - name: Setup gitlab-ce repo
+      ansible.builtin.copy:
+        src: ./gitlab-ce.repo
+        dest: /etc/yum.repos.d/gitlab-ce.repo
+
+    - name: Setup gitlab-runner repo
+      ansible.builtin.copy:
+        src: ./gitlab-runner.repo
+        dest: /etc/yum.repos.d/gitlab-runner.repo
+    
+    - name: Install packages
+      ansible.builtin.yum:
+        name:
+          - gitlab-ce
+          - gitlab-runner
+          - python3-pip
+        state: present
+    
+    - name: Install pip packages
+      ansible.builtin.pip:
+        name:
+          - ansible
+

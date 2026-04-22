@@ -1,0 +1,49 @@
+---
+- name: Deploy Playbook
+  hosts : all
+  become: yes
+  vars:
+    user: "{{ lookup('env', 'TOKEN_USERNAME') }}"
+    password: "{{ lookup('env', 'TOKEN_KEY') }}"
+    registry_url: "{{ lookup('env', 'CI_REGISTRY') }}"
+    image: "{{ lookup('env', 'CI_REGISTRY_IMAGE') }}"
+    tag: "{{ lookup('env', 'CI_COMMIT_SHORT_SHA') }}"
+    container_name: "springboot"
+
+  tasks:
+    - name: Add GitLab IP to /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        line: "192.168.200.20 gitlab.fiipractic.lan"
+        state: present
+
+    - name: Log into Gitlab Container Registry
+      docker_login:
+        registry: "{{ registry_url }}"
+        username: "{{ user }}"
+        password: "{{ password }}"
+
+    - name: Pull Docker image
+      docker_image:
+        name: "{{ image }}"
+        tag: "{{ tag }}"
+        source: pull
+
+    - name: Stop and remove existing container
+      docker_container:
+        name: "{{ container_name }}"
+        state: absent
+        force_kill: yes
+      ignore_errors: yes
+
+    - name: Deploy Docker container
+      docker_container:
+        name: "{{ container_name }}"
+        image: "{{ image }}:{{ tag }}"
+        published_ports: 8080:8080
+        state: started
+
+    - name: Logout from Gitlab Container Registry
+      docker_login:
+        state: absent
+
