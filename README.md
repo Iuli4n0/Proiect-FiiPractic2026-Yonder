@@ -1,6 +1,6 @@
 # Proiect-FiiPractic2026-Yonder
 
-- Folosesc Vagrant impreuna cu providerul ‘ansible’ pentru a ridica cele 2 vm-uri. Am folosit hostnames app.proiect.fiipractic.lan si gitlab.fiipractic.lan cu ip-urile 192.168.200.10 respectiv 192.168.200.20. Playbookul `common.yml` contine cerintele din proiect + configurare repos, instalare docker,gitlab si ce am mai avut nevoie. Playbookul `netdata.yml` contine insalarea si configurarea nginx + netdata. Gitlab-runner porneste pipeline-ul ci/cd. Runnerul face build si push la imaginea docker in registry. Dupa runnerul in etapa de deploy ruleaza playbookul ansible. Ansible intra cu ssh pe app.proiect.fiipractic.lan, descarca imaginea din registry si porneste docker. Docker face expose la aplicatie.
+- Folosesc Vagrant impreuna cu providerul ‘ansible’ pentru a ridica cele 2 vm-uri. Am folosit hostnames app.proiect.fiipractic.lan si gitlab.fiipractic.lan cu ip-urile 192.168.200.10 respectiv 192.168.200.20. Playbookul `common.yml` contine cerintele din proiect + configurare repos, instalare docker,gitlab si ce am mai avut nevoie. Playbookul `netdata.yml` contine insalarea si configurarea nginx + netdata. Gitlab-runner porneste pipeline-ul ci/cd. Runnerul face build si push la imaginea docker in registry. Dupa runnerul in etapa de deploy ruleaza playbookul ansible. Ansible intra cu ssh pe app.proiect.fiipractic.lan, descarca imaginea din registry si porneste docker. Docker face expose la aplicatie. (vezi `diagrama.png`)
 
 
 Structura:
